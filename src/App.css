@@ -90,3 +90,25 @@
   text-align: left;
   margin-bottom: 0.25rem;
 }
+
+.event-list {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.event-title {
+  background: #0d6efd;
+  color: white;
+  font-size: 0.7rem;
+  border-radius: 4px;
+  padding: 0.15rem 0.3rem;
+  margin-bottom: 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.event-title:hover {
+  background-color: #004aad;
+}
