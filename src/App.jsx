@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import eventsJSON from "./data/events.json";
 import Calendar from "./components/Calendar";
 import Navbar from "./components/Navbar";
 import EventDetail from "./components/EventDetail";
+import AddEvent from "./components/AddEvent";
 import { Routes, Route } from "react-router-dom";
 import "./App.css";
 
@@ -26,12 +27,20 @@ function normalizeEvent(ev, idx) {
   };
 }
 
-function AddEvent() {
-  return <div className="container py-4">Add Event will be here</div>;
+function AddEventPlaceholder() {
+  return null;
 }
 
 export default function App() {
-  const [events] = useState(() => eventsJSON.data.map(normalizeEvent));
+  const [events, setEvents] = useState(() => {
+    const saved = localStorage.getItem("events");
+    if (saved) return JSON.parse(saved);
+    return eventsJSON.data.map(normalizeEvent);
+  });
+
+  useEffect(() => {
+    localStorage.setItem("events", JSON.stringify(events));
+  }, [events]);
 
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
@@ -44,10 +53,26 @@ export default function App() {
     setCurrentMonth(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
   };
 
+  const addEvent = (data) => {
+    const maxId = events.reduce((m, e) => Math.max(m, Number(e.id) || 0), 0);
+    const payload = {
+      id: maxId + 1,
+      date: data.date,
+      dateVenue: data.date,
+      timeVenueUTC: data.time || "",
+      sport: data.sport || "",
+      homeTeam: { name: data.home || "TBD" },
+      awayTeam: { name: data.away || "TBD" },
+      venue: data.venue ? { name: data.venue } : undefined,
+    };
+    const titled = { ...payload, title: buildTitle(payload) };
+    setEvents((prev) => [...prev, titled]);
+  };
+
   return (
     <div className="app-container">
       <Navbar />
-      <div className="calendar-wrapper container py-3">
+      <div className="calendar-wrapper container-fluid py-3">
         <h1 className="calendar-title">Sport Events Calendar</h1>
         <div className="month-navigation d-flex justify-content-between align-items-center mb-3">
           <button className="btn btn-primary" onClick={goToPreviousMonth}>&lt; Previous</button>
@@ -58,8 +83,9 @@ export default function App() {
         </div>
         <Routes>
           <Route path="/" element={<Calendar year={currentMonth.year} month={currentMonth.month} events={events} />} />
-          <Route path="/add" element={<AddEvent />} />
+          <Route path="/add" element={<AddEvent onAdd={addEvent} />} />
           <Route path="/event/:id" element={<EventDetail events={events} />} />
+          <Route path="/__placeholder" element={<AddEventPlaceholder />} />
         </Routes>
       </div>
     </div>
