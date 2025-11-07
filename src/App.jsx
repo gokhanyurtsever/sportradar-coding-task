@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import eventsJSON from "./data/events.json";
 import Calendar from "./components/Calendar";
 import Navbar from "./components/Navbar";
+import EventDetail from "./components/EventDetail";
 import { Routes, Route } from "react-router-dom";
 import "./App.css";
 
@@ -25,6 +26,10 @@ function normalizeEvent(ev, idx) {
   };
 }
 
+function AddEvent() {
+  return <div className="container py-4">Add Event will be here</div>;
+}
+
 export default function App() {
   const [events] = useState(() => eventsJSON.data.map(normalizeEvent));
 
@@ -42,24 +47,19 @@ export default function App() {
   return (
     <div className="app-container">
       <Navbar />
-      <div className="calendar-wrapper">
+      <div className="calendar-wrapper container py-3">
+        <h1 className="calendar-title">Sport Events Calendar</h1>
+        <div className="month-navigation d-flex justify-content-between align-items-center mb-3">
+          <button className="btn btn-primary" onClick={goToPreviousMonth}>&lt; Previous</button>
+          <h5 className="month-label m-0">
+            {new Date(currentMonth.year, currentMonth.month).toLocaleString("default", { month: "long", year: "numeric" })}
+          </h5>
+          <button className="btn btn-primary" onClick={goToNextMonth}>Next &gt;</button>
+        </div>
         <Routes>
-          <Route
-            path="/"
-            element={
-              <>
-                <h1 className="calendar-title">Sport Events Calendar</h1>
-                <div className="month-navigation">
-                  <button className="nav-btn" onClick={goToPreviousMonth}>&lt; Previous</button>
-                  <h5 className="month-label">
-                    {new Date(currentMonth.year, currentMonth.month).toLocaleString("default", { month: "long", year: "numeric" })}
-                  </h5>
-                  <button className="nav-btn" onClick={goToNextMonth}>Next &gt;</button>
-                </div>
-                <Calendar year={currentMonth.year} month={currentMonth.month} events={events} />
-              </>
-            }
-          />
+          <Route path="/" element={<Calendar year={currentMonth.year} month={currentMonth.month} events={events} />} />
+          <Route path="/add" element={<AddEvent />} />
+          <Route path="/event/:id" element={<EventDetail events={events} />} />
         </Routes>
       </div>
     </div>
