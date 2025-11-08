@@ -24,54 +24,46 @@ export default function EventDetail({ events }) {
     awayTeam,
     status,
     result,
-    stage,
     originCompetitionName,
-    season,
-    stadium,
+    season
   } = event;
 
   const home = homeTeam || {};
   const away = awayTeam || {};
-  const resultDetails = result || {};
-  const stageDetails = stage || {};
 
-  const getScoreDisplay = () => {
-    if (
-      resultDetails &&
-      typeof resultDetails.homeGoals === "number" &&
-      typeof resultDetails.awayGoals === "number"
-    ) {
-      return `${resultDetails.homeGoals} - ${resultDetails.awayGoals}`;
-    }
-    return "Not played yet";
-  };
+  const homeName = (home.name || "").trim();
+  const awayName = (away.name || "").trim();
 
-  const getStatusBadge = () => {
-    switch (String(status || "").toLowerCase()) {
-      case "played":
-        return "bg-success";
-      case "scheduled":
-        return "bg-primary";
-      case "cancelled":
-        return "bg-danger";
-      default:
-        return "bg-secondary";
-    }
-  };
+  const hasHome = Boolean(homeName);
+  const hasAway = Boolean(awayName);
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "N/A";
+  const hasScore =
+    result &&
+    typeof result.homeGoals === "number" &&
+    typeof result.awayGoals === "number";
+
+  const scoreline = hasScore ? `${result.homeGoals} - ${result.awayGoals}` : "vs";
+
+  const dateLabel = (() => {
+    if (!dateVenue) return "";
     try {
-      return new Date(dateStr).toLocaleDateString("en-US", {
+      return new Date(dateVenue).toLocaleDateString("en-US", {
         weekday: "long",
         year: "numeric",
         month: "long",
-        day: "numeric",
+        day: "numeric"
       });
     } catch {
-      return dateStr;
+      return dateVenue;
     }
-  };
+  })();
+
+  const timeLabel = timeVenueUTC ? timeVenueUTC.substring(0, 5) : "";
+  const sportLabel = sport ? sport.charAt(0).toUpperCase() + sport.slice(1) : "";
+  const statusText = status || "scheduled";
+
+  const homeInitials = hasHome ? homeName.split(" ").map(s => s[0]).join("").slice(0,3).toUpperCase() : "";
+  const awayInitials = hasAway ? awayName.split(" ").map(s => s[0]).join("").slice(0,3).toUpperCase() : "";
 
   return (
     <div className="container mt-4">
@@ -79,39 +71,43 @@ export default function EventDetail({ events }) {
         ← Back to Calendar
       </button>
 
-      <div className="card shadow">
+      <div className="card detail-card mx-auto">
         <div className="card-header bg-primary text-white">
-          <h2 className="mb-0">🏆 {originCompetitionName || "Competition"}</h2>
+          <h2 className="mb-0">{originCompetitionName || "Competition"}</h2>
         </div>
 
         <div className="card-body">
-          <div className="row mb-4">
-            <div className="col-md-6">
-              <p><strong>Season:</strong> {season || "N/A"}</p>
-              {stageDetails.name && <p><strong>Stage:</strong> {stageDetails.name}</p>}
+          <div className="detail-header">
+            <div className="team-block text-start">
+              <div className="team-avatar bg-primary text-white">{homeInitials}</div>
+              {hasHome ? <div className="team-name">{homeName}</div> : null}
             </div>
-            <div className="col-md-6">
-              <p><strong>Date:</strong> {formatDate(dateVenue)}</p>
-              {timeVenueUTC && <p><strong>Time:</strong> {timeVenueUTC.substring(0,5)} UTC</p>}
-              {stadium && <p><strong>Stadium:</strong> {stadium}</p>}
-              <p>
-                <strong>Status:</strong>{" "}
-                <span className={`badge ${getStatusBadge()}`}>
-                  {status || "scheduled"}
-                </span>
-              </p>
+
+            <div className="score-meta text-center">
+              {sportLabel && <span className="badge text-bg-secondary rounded-pill">{sportLabel}</span>}
+              {season && <span className="badge text-bg-secondary rounded-pill ms-2">{season}</span>}
+              <div className="scoreline">{scoreline}</div>
+              <div className="datetime text-muted">
+                {dateLabel}{timeLabel ? ` • ${timeLabel} UTC` : ""}
+              </div>
+              <div className="status-text text-muted">{statusText}</div>
+            </div>
+
+            <div className="team-block text-end">
+              {hasAway ? <div className="team-name">{awayName}</div> : null}
+              <div className="team-avatar bg-danger text-white">{awayInitials}</div>
             </div>
           </div>
 
-          <div className="row mb-4">
+          <div className="row g-3 mt-3">
             <div className="col-md-6">
               <div className="card h-100">
                 <div className="card-header bg-light"><h5 className="mb-0">Home Team</h5></div>
                 <div className="card-body">
-                  <h4 className="text-primary">{home.name || "TBD"}</h4>
-                  <p><strong>Official Name:</strong> {home.officialName || home.name || "N/A"}</p>
-                  <p><strong>Abbreviation:</strong> {home.abbreviation || "N/A"}</p>
-                  <p><strong>Country Code:</strong> {home.teamCountryCode || "N/A"}</p>
+                  <h4 className="text-primary">{hasHome ? homeName : ""}</h4>
+                  <p><strong>Official Name:</strong> <span>{home.officialName || (hasHome ? homeName : "")}</span></p>
+                  <p><strong>Abbreviation:</strong> <span>{home.abbreviation || ""}</span></p>
+                  <p><strong>Country Code:</strong> <span>{home.teamCountryCode || ""}</span></p>
                 </div>
               </div>
             </div>
@@ -120,55 +116,15 @@ export default function EventDetail({ events }) {
               <div className="card h-100">
                 <div className="card-header bg-light"><h5 className="mb-0">Away Team</h5></div>
                 <div className="card-body">
-                  <h4 className="text-danger">{away.name || "TBD"}</h4>
-                  <p><strong>Official Name:</strong> {away.officialName || away.name || "N/A"}</p>
-                  <p><strong>Abbreviation:</strong> {away.abbreviation || "N/A"}</p>
-                  <p><strong>Country Code:</strong> {away.teamCountryCode || "N/A"}</p>
+                  <h4 className="text-danger">{hasAway ? awayName : ""}</h4>
+                  <p><strong>Official Name:</strong> <span>{away.officialName || (hasAway ? awayName : "")}</span></p>
+                  <p><strong>Abbreviation:</strong> <span>{away.abbreviation || ""}</span></p>
+                  <p><strong>Country Code:</strong> <span>{away.teamCountryCode || ""}</span></p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="card mb-4">
-            <div className="card-header bg-light"><h5 className="mb-0">Match Result</h5></div>
-            <div className="card-body text-center">
-              <div className="fs-1 fw-bold mb-3">{getScoreDisplay()}</div>
-              {resultDetails && resultDetails.winner && (
-                <p><strong>Winner:</strong> {resultDetails.winner}</p>
-              )}
-              {resultDetails && resultDetails.message && (
-                <p className="text-muted">{resultDetails.message}</p>
-              )}
-            </div>
-          </div>
-
-          {resultDetails && typeof resultDetails.homeGoals === "number" && (
-            <div>
-              <h5>Match Statistics</h5>
-              <div className="row">
-                {Array.isArray(resultDetails.goals) && resultDetails.goals.length > 0 && (
-                  <div className="col-md-6">
-                    <strong>Goals:</strong>
-                    <ul className="list-unstyled">
-                      {resultDetails.goals.map((goal, idx) => (
-                        <li key={idx}>⚽ {goal.playerName || "Unknown"} ({goal.team || "Unknown"}) {goal.minute ? `- ${goal.minute}'` : ""}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {Array.isArray(resultDetails.yellowCards) && resultDetails.yellowCards.length > 0 && (
-                  <div className="col-md-6">
-                    <strong>Yellow Cards:</strong>
-                    <ul className="list-unstyled">
-                      {resultDetails.yellowCards.map((card, idx) => (
-                        <li key={idx}>🟨 {card.playerName || "Unknown"} ({card.team || "Unknown"}) {card.minute ? `- ${card.minute}'` : ""}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

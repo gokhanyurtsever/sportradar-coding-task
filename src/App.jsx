@@ -7,23 +7,50 @@ import AddEvent from "./components/AddEvent";
 import { Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import "./App.css";
 
+function resolveTeamName(ev, side) {
+  const s = String(side).toLowerCase();
+  const a = ev?.[s + "Team"]?.name;
+  const b = ev?.[s]?.name;
+  const d = ev?.[s + "TeamName"];
+  const pools = [
+    Array.isArray(ev?.competitors) ? ev.competitors : null,
+    Array.isArray(ev?.teams) ? ev.teams : null,
+    Array.isArray(ev?.participants) ? ev.participants : null
+  ].filter(Boolean);
+  let c = "";
+  for (const arr of pools) {
+    const hit =
+      arr.find(t => String(t?.qualifier).toLowerCase() === s) ||
+      arr.find(t => String(t?.homeAway).toLowerCase() === s) ||
+      arr.find(t => String(t?.side).toLowerCase() === s) ||
+      arr.find(t => String(t?.teamType).toLowerCase() === s) ||
+      arr.find(t => t?.isHome === true && s === "home") ||
+      arr.find(t => t?.isAway === true && s === "away");
+    if (hit?.name) { c = hit.name; break; }
+    if (hit?.team?.name) { c = hit.team.name; break; }
+  }
+  return a || b || c || d || "";
+}
+
 function buildTitle(ev) {
-  const d = new Date(ev.dateVenue);
+  const date = ev.dateVenue || ev.date;
+  const d = new Date(date);
   const dayPart = d.toLocaleDateString("en-GB", { weekday: "short" });
   const datePart = d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
   const timePart = ev.timeVenueUTC ? ev.timeVenueUTC.substring(0, 5) : "00:00";
   const sportPart = ev.sport ? ev.sport.charAt(0).toUpperCase() + ev.sport.slice(1) : "Sport";
-  const home = ev.homeTeam?.name || "TBD";
-  const away = ev.awayTeam?.name || "TBD";
+  const home = resolveTeamName(ev, "home") || "TBD";
+  const away = resolveTeamName(ev, "away") || "TBD";
   return `${dayPart}. ${datePart}, ${timePart}, ${sportPart}, ${home} vs. ${away}`;
 }
 
 function normalizeEvent(ev, idx) {
+  const date = ev.date ?? ev.dateVenue;
   return {
     ...ev,
     id: idx + 1,
-    date: ev.date ?? ev.dateVenue,
-    title: buildTitle(ev),
+    date,
+    title: buildTitle({ ...ev, dateVenue: date })
   };
 }
 
@@ -38,14 +65,15 @@ function MonthView({ events }) {
   const month = valid ? m : now.getMonth();
 
   const goPrev = () => {
-    const prev = month === 0 ? { y: year - 1, m: 12 } : { y: year, m: month };
-    const mm = month === 0 ? 12 : month;
-    navigate(`/month/${prev.y}/${String(mm).padStart(2, "0")}`);
+    const prevY = month === 0 ? year - 1 : year;
+    const prevM = month === 0 ? 12 : month;
+    navigate(`/month/${prevY}/${String(prevM).padStart(2, "0")}`);
   };
 
   const goNext = () => {
-    const next = month === 11 ? { y: year + 1, m: 1 } : { y: year, m: month + 2 };
-    navigate(`/month/${next.y}/${String(next.m).padStart(2, "0")}`);
+    const nextY = month === 11 ? year + 1 : year;
+    const nextM = month === 11 ? 1 : month + 2;
+    navigate(`/month/${nextY}/${String(nextM).padStart(2, "0")}`);
   };
 
   return (
