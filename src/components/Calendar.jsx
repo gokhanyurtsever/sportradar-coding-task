@@ -5,10 +5,10 @@ const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function Calendar({ year, month, events = [] }) {
   const navigate = useNavigate();
-
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
   const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+  const today = new Date();
 
   const cells = [];
   for (let i = 0; i < startOffset; i++) {
@@ -18,11 +18,15 @@ export default function Calendar({ year, month, events = [] }) {
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const eventsOnDay = events.filter((e) => e.date === dateStr);
+    const dow = new Date(year, month, day).getDay();
+    const isWeekend = dow === 0 || dow === 6;
+    const isToday = year === today.getFullYear() && month === today.getMonth() && day === today.getDate();
+    const cls = `calendar-cell${isWeekend ? " weekend" : ""}${isToday ? " today" : ""}`;
 
     cells.push(
       <div
         key={`day-${day}`}
-        className="calendar-cell"
+        className={cls}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
