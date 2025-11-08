@@ -4,7 +4,7 @@ import Calendar from "./components/Calendar";
 import Navbar from "./components/Navbar";
 import EventDetail from "./components/EventDetail";
 import AddEvent from "./components/AddEvent";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import "./App.css";
 
 function buildTitle(ev) {
@@ -27,8 +27,40 @@ function normalizeEvent(ev, idx) {
   };
 }
 
-function AddEventPlaceholder() {
-  return null;
+function MonthView({ events }) {
+  const params = useParams();
+  const navigate = useNavigate();
+  const y = Number(params.year);
+  const m = Number(params.month) - 1;
+  const valid = Number.isInteger(y) && Number.isInteger(m) && m >= 0 && m <= 11;
+  const now = new Date();
+  const year = valid ? y : now.getFullYear();
+  const month = valid ? m : now.getMonth();
+
+  const goPrev = () => {
+    const prev = month === 0 ? { y: year - 1, m: 12 } : { y: year, m: month };
+    const mm = month === 0 ? 12 : month;
+    navigate(`/month/${prev.y}/${String(mm).padStart(2, "0")}`);
+  };
+
+  const goNext = () => {
+    const next = month === 11 ? { y: year + 1, m: 1 } : { y: year, m: month + 2 };
+    navigate(`/month/${next.y}/${String(next.m).padStart(2, "0")}`);
+  };
+
+  return (
+    <div className="calendar-wrapper container-fluid py-3">
+      <h1 className="calendar-title">Sport Events Calendar</h1>
+      <div className="month-navigation d-flex justify-content-between align-items-center mb-3">
+        <button className="btn btn-primary" onClick={goPrev}>&lt; Previous</button>
+        <h5 className="month-label m-0">
+          {new Date(year, month).toLocaleString("default", { month: "long", year: "numeric" })}
+        </h5>
+        <button className="btn btn-primary" onClick={goNext}>Next &gt;</button>
+      </div>
+      <Calendar year={year} month={month} events={events} />
+    </div>
+  );
 }
 
 export default function App() {
@@ -41,17 +73,6 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("events", JSON.stringify(events));
   }, [events]);
-
-  const now = new Date();
-  const [currentMonth, setCurrentMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
-
-  const goToPreviousMonth = () => {
-    setCurrentMonth(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }));
-  };
-
-  const goToNextMonth = () => {
-    setCurrentMonth(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
-  };
 
   const addEvent = (data) => {
     const maxId = events.reduce((m, e) => Math.max(m, Number(e.id) || 0), 0);
@@ -69,25 +90,18 @@ export default function App() {
     setEvents((prev) => [...prev, titled]);
   };
 
+  const now = new Date();
+  const currentPath = `/month/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`;
+
   return (
     <div className="app-container">
       <Navbar />
-      <div className="calendar-wrapper container-fluid py-3">
-        <h1 className="calendar-title">Sport Events Calendar</h1>
-        <div className="month-navigation d-flex justify-content-between align-items-center mb-3">
-          <button className="btn btn-primary" onClick={goToPreviousMonth}>&lt; Previous</button>
-          <h5 className="month-label m-0">
-            {new Date(currentMonth.year, currentMonth.month).toLocaleString("default", { month: "long", year: "numeric" })}
-          </h5>
-          <button className="btn btn-primary" onClick={goToNextMonth}>Next &gt;</button>
-        </div>
-        <Routes>
-          <Route path="/" element={<Calendar year={currentMonth.year} month={currentMonth.month} events={events} />} />
-          <Route path="/add" element={<AddEvent onAdd={addEvent} />} />
-          <Route path="/event/:id" element={<EventDetail events={events} />} />
-          <Route path="/__placeholder" element={<AddEventPlaceholder />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<Navigate to={currentPath} replace />} />
+        <Route path="/month/:year/:month" element={<MonthView events={events} />} />
+        <Route path="/add" element={<AddEvent onAdd={addEvent} />} />
+        <Route path="/event/:id" element={<EventDetail events={events} />} />
+      </Routes>
     </div>
   );
 }
